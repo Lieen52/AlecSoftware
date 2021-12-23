@@ -12,6 +12,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SistemaInventario.AccesoDatos.Data;
+using SistemaInventario.AccesoDatos.Repositorio.IRepositorio;
+using SistemaInventario.AccesoDatos.Repositorio;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using SistemaInventario.Utilidades;
+using Stripe;
 
 namespace SistemaInventario
 {
@@ -30,10 +35,25 @@ namespace SistemaInventario
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(
                     Configuration.GetConnectionString("DefaultConnection")));
-            services.AddDefaultIdentity<IdentityUser>()
+            services.AddIdentity<IdentityUser, IdentityRole>().AddDefaultTokenProviders()
                 .AddEntityFrameworkStores<ApplicationDbContext>();
+            services.AddSingleton<IEmailSender, EmailSender>();
+            services.Configure<StripeSettings>(Configuration.GetSection("Stripe"));
+            services.AddScoped<IUnidadTrabajo, UnidadTrabajo>();
             services.AddControllersWithViews().AddRazorRuntimeCompilation();
             services.AddRazorPages();
+            services.ConfigureApplicationCookie(options =>
+            {
+                options.LoginPath = $"/Identity/Account/Login";
+                options.LogoutPath = $"/Identity/Account/Logout";
+                options.AccessDeniedPath = $"/Identity/Account/AccessDenied";
+            });
+            services.AddSession(options =>
+            {
+                options.IdleTimeout = TimeSpan.FromMinutes(30);
+                options.Cookie.HttpOnly = true;
+                options.Cookie.IsEssential = true;
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -54,9 +74,12 @@ namespace SistemaInventario
             app.UseStaticFiles();
 
             app.UseRouting();
+            app.UseSession();
 
             app.UseAuthentication();
             app.UseAuthorization();
+
+            StripeConfiguration.ApiKey = Configuration.GetSection("Stripe")["SecretKey"];
 
             app.UseEndpoints(endpoints =>
             {
@@ -65,6 +88,9 @@ namespace SistemaInventario
                     pattern: "{area=Inventario}/{controller=Home}/{action=Index}/{id?}");
                 endpoints.MapRazorPages();
             });
+
+            Rotativa.AspNetCore.RotativaConfiguration.Setup(env.WebRootPath, "..\\Rotativa\\Windows\\");
+
         }
     }
 }
