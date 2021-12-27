@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Rotativa.AspNetCore;
+using SistemaInventario.AccesoDatos.Data;
 using SistemaInventario.AccesoDatos.Repositorio.IRepositorio;
 using SistemaInventario.Modelos;
 using SistemaInventario.Modelos.ViewModels;
@@ -22,6 +23,8 @@ namespace SistemaInventario.Areas.Inventario.Controllers
         private readonly IUnidadTrabajo _unidadTrabajo;
         private readonly IEmailSender _emailSender;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly ApplicationDbContext _db;
+     
 
         [BindProperty]
         public CarroComprasViewModel CarroComprasVM { get; set; }
@@ -32,6 +35,7 @@ namespace SistemaInventario.Areas.Inventario.Controllers
             _unidadTrabajo = unidadTrabajo;
             _emailSender = emailSender;
             _userManager = userManager;
+          
         }
 
         public IActionResult Index()
@@ -144,6 +148,9 @@ namespace SistemaInventario.Areas.Inventario.Controllers
             CarroComprasVM.Orden.EstadoPago = DS.PagoEstadoPendiente;
             CarroComprasVM.Orden.UsuarioAplicacionId = claim.Value;
             CarroComprasVM.Orden.FechaOrden = DateTime.Now;
+            CarroComprasVM.Compania = _unidadTrabajo.Compania.ObtenerPrimero();
+
+
 
             _unidadTrabajo.Orden.Agregar(CarroComprasVM.Orden);
             _unidadTrabajo.Guardar();
@@ -195,6 +202,14 @@ namespace SistemaInventario.Areas.Inventario.Controllers
                     CarroComprasVM.Orden.EstadoPago = DS.PagoEstadoAprobado;
                     CarroComprasVM.Orden.EstadoOrden = DS.EstadoAprobado;
                     CarroComprasVM.Orden.FechaPago = DateTime.Now;
+
+                    //foreach(var item in CarroComprasVM.CarroComprasLista)
+                    //{
+                    //    var producto = _db.BodegaProducto.FirstOrDefault(b => b.ProductoId == item.ProductoId &&
+                    //                                          b.BodegaId == CarroComprasVM.Compania.BodegaVentaId);
+
+                    //    producto.Cantidad -= item.Cantidad;
+                    //}
                 }
 
             }
