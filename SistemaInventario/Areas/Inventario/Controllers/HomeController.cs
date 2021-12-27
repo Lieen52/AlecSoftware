@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SistemaInventario.AccesoDatos.Data;
@@ -37,10 +38,22 @@ namespace SistemaInventario.Areas.Inventario.Controllers
 
         public IActionResult Index()
         {
-            IEnumerable<Producto> productoLista = _unidadTrabajo.Producto.ObtenerTodos(incluirPropiedades: "Categoria,Marca");
+            //IEnumerable<Producto> productoLista = _unidadTrabajo.Producto.ObtenerTodos(incluirPropiedades: "Categoria,Marca");
+
+            ProductoVM productoVM = new ProductoVM()
+            {
+                ProductoLista = _unidadTrabajo.Producto.ObtenerTodos(incluirPropiedades: "Categoria,Marca"),
+                CategoriaLista = _unidadTrabajo.Categoria.ObtenerTodos().Select(c => new SelectListItem
+                {
+                    Text = c.Nombre,
+                    Value = c.Id.ToString()
+                })
+            };
+
+
             var claimIdentidad = (ClaimsIdentity)User.Identity;
             var claim = claimIdentidad.FindFirst(ClaimTypes.NameIdentifier);
-            if (claim!=null)
+            if (claim != null)
             {
                 var numeroProductos = _unidadTrabajo.CarroCompras.ObtenerTodos(c => c.UsuarioAplicacionId ==
                                                                          claim.Value).ToList().Count();
@@ -48,8 +61,82 @@ namespace SistemaInventario.Areas.Inventario.Controllers
             }
 
 
-            return View(productoLista);
+            return View(productoVM);
         }
+
+        [HttpPost]
+        public IActionResult Index(int categoria, string filtro)
+        {
+            ProductoVM productoVM = new ProductoVM();
+
+            if (categoria > 0 && filtro == null)
+            {
+                productoVM = new ProductoVM()
+                {
+                    CategoriaLista = _unidadTrabajo.Categoria.ObtenerTodos().Select(c => new SelectListItem
+                    {
+                        Text = c.Nombre,
+                        Value = c.Id.ToString()
+                    }),
+
+                    ProductoLista = _unidadTrabajo.Producto.ObtenerTodos(incluirPropiedades: "Categoria,Marca").Where(p => p.CategoriaId == categoria)
+                };
+            }
+
+            if (categoria > 0 && filtro != null)
+            {
+                productoVM = new ProductoVM()
+                {
+                    CategoriaLista = _unidadTrabajo.Categoria.ObtenerTodos().Select(c => new SelectListItem
+                    {
+                        Text = c.Nombre,
+                        Value = c.Id.ToString()
+                    }),
+
+                    ProductoLista = _unidadTrabajo.Producto.ObtenerTodos(incluirPropiedades: "Categoria,Marca").
+            Where(p => p.CategoriaId == categoria && p.Descripcion.ToUpper().Contains(filtro.ToUpper()))
+                };
+            }
+
+            if (categoria == 0 && filtro != null)
+            {
+                productoVM = new ProductoVM()
+                {
+                    CategoriaLista = _unidadTrabajo.Categoria.ObtenerTodos().Select(c => new SelectListItem
+                    {
+                        Text = c.Nombre,
+                        Value = c.Id.ToString()
+                    }),
+
+                    ProductoLista = _unidadTrabajo.Producto.ObtenerTodos(incluirPropiedades: "Categoria,Marca").
+            Where(p => p.Descripcion.ToUpper().Contains(filtro.ToUpper()))
+                };
+            }
+
+
+            if (categoria == 0 && filtro == null)
+            {
+                productoVM = new ProductoVM()
+                {
+                    CategoriaLista = _unidadTrabajo.Categoria.ObtenerTodos().Select(c => new SelectListItem
+                    {
+                        Text = c.Nombre,
+                        Value = c.Id.ToString()
+                    }),
+
+                    ProductoLista = _unidadTrabajo.Producto.ObtenerTodos(incluirPropiedades: "Categoria,Marca")
+                };
+            }
+
+            return View(productoVM);
+
+        }
+
+
+    
+
+
+
 
         public IActionResult Detalle(int id)
         {
@@ -118,3 +205,4 @@ namespace SistemaInventario.Areas.Inventario.Controllers
         }
     }
 }
+

@@ -17,6 +17,7 @@ using SistemaInventario.AccesoDatos.Repositorio;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using SistemaInventario.Utilidades;
 using Stripe;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 
 namespace SistemaInventario
 {
@@ -38,6 +39,7 @@ namespace SistemaInventario
             services.AddIdentity<IdentityUser, IdentityRole>().AddDefaultTokenProviders()
                 .AddEntityFrameworkStores<ApplicationDbContext>();
             services.AddSingleton<IEmailSender, EmailSender>();
+            services.AddSingleton<ITempDataProvider, CookieTempDataProvider>();
             services.Configure<StripeSettings>(Configuration.GetSection("Stripe"));
             services.AddScoped<IUnidadTrabajo, UnidadTrabajo>();
             services.AddControllersWithViews().AddRazorRuntimeCompilation();
